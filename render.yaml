@@ -2,6 +2,7 @@ services:
   - type: web
     name: nexus-accounting
     runtime: python
+    pythonVersion: "3.12.0"
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && gunicorn app:app -c gunicorn.conf.py
     envVars:
