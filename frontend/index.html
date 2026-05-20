@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus — Robot Contabilístico</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Sidebar overlay (mobile) ─────────────── -->
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- ── Sidebar ──────────────────────────────── -->
+  <aside id="sidebar">
+    <div class="brand">
+      <h1>NEXUS</h1>
+      <span>Robot Contabilístico</span>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Navegação</div>
+      <div class="nav-item active" data-view="dashboard" onclick="navigate('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" data-view="clients" onclick="navigate('clients')">
+        <span class="icon">🏢</span> Clientes
+      </div>
+      <div class="nav-item" data-view="settings" onclick="navigate('settings')">
+        <span class="icon">⚙️</span> Configurações
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Clientes Recentes</div>
+      <div class="client-list" id="sidebar-clients">
+        <div class="client-entry text-muted text-sm" style="padding-left:20px">A carregar…</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────── -->
+  <div id="main">
+    <div id="topbar">
+      <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">&#9776;</button>
+      <h2 id="topbar-title">Dashboard</h2>
+      <div id="auth-status" class="auth-badge no">Não autenticado</div>
+      <a class="btn-link" onclick="openAuthModal()" id="auth-link">Ligar TOConline</a>
+    </div>
+
+    <div id="content">
+      <!-- Views injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ─────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── Auth Modal ─────────────────────── -->
+<div id="auth-modal" class="modal-overlay" style="display:none">
+  <div class="modal" style="min-width:520px">
+    <div class="modal-title">🔐 Configurar Credenciais TOConline</div>
+
+    <!-- Step 1: not configured yet -->
+    <div id="auth-step-setup">
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:13px;line-height:1.6">
+        <strong>Como obter as credenciais:</strong><br>
+        1. Aceda ao TOConline com conta de <strong>Empresário</strong><br>
+        2. Menu → <strong>Empresa → Configurações → Dados API</strong><br>
+        3. Introduza o nome e email do integrador<br>
+        4. O integrador receberá um e-mail com <strong>Client ID, Secret e OAUTH_URL</strong>
+      </div>
+      <div class="form-group">
+        <label>OAUTH URL <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="cred-oauth-url" placeholder="URL recebido por e-mail (ex: https://xxx.toconline.pt)">
+      </div>
+      <div class="form-group">
+        <label>Client ID <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="cred-client-id" placeholder="OAUTH_CLIENT_ID do e-mail">
+      </div>
+      <div class="form-group">
+        <label>Client Secret <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="cred-client-secret" placeholder="OAUTH_CLIENT_SECRET do e-mail">
+      </div>
+      <div class="form-group">
+        <label>API URL</label>
+        <input type="text" id="cred-api-url" value="https://apiv1.toconline.com" placeholder="https://apiv1.toconline.com">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeAuthModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveCredentials()">Guardar e Autenticar</button>
+      </div>
+    </div>
+
+    <!-- Step 2: configured, now authenticate -->
+    <div id="auth-step-login" style="display:none">
+      <p style="color:var(--text-muted);margin-bottom:16px;line-height:1.7">
+        Credenciais configuradas. Clique em <strong>Iniciar Autenticação</strong> para abrir a janela de login TOConline.<br>
+        Após autorizar no browser, a página será atualizada automaticamente.
+      </p>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:12px">
+        <strong>Redirect URI registado:</strong><br>
+        <code id="redirect-uri-display" style="font-size:11px">http://localhost:5000/api/auth/toconline/callback</code>
+        <br><em style="color:var(--text-muted)">Este URL deve estar registado nos Dados API do TOConline</em>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="showCredSetup()">← Editar Credenciais</button>
+        <button class="btn btn-outline" onclick="closeAuthModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="startAuth()">Iniciar Autenticação</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Upload Modal ─────────────────────── -->
+<div id="upload-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">📤 Carregar Extrato Bancário</div>
+    <div class="form-group">
+      <label>Banco (dica para detecção)</label>
+      <select id="upload-bank-hint">
+        <option value="">Auto-detectar</option>
+        <option value="millennium">Millennium BCP</option>
+        <option value="bpi">BPI</option>
+        <option value="cgd">Caixa Geral de Depósitos</option>
+        <option value="santander">Santander</option>
+        <option value="novobanco">Novo Banco</option>
+        <option value="bankinter">Bankinter</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Ano</label>
+      <input type="number" id="upload-year" value="" min="2020" max="2030" style="width:120px">
+    </div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="icon">📁</div>
+      <p><strong>Clique para seleccionar</strong> ou arraste o ficheiro aqui</p>
+      <p class="text-sm mt-8">PDF, XLSX, XLS ou CSV</p>
+    </div>
+    <input type="file" id="file-input" accept=".pdf,.xlsx,.xls,.csv" style="display:none" onchange="handleFileSelect(event)">
+    <div id="upload-progress" style="display:none;margin-top:12px">
+      <div class="progress-bar"><div class="progress-fill matched" id="upload-bar" style="width:0%"></div></div>
+      <p class="text-sm text-muted mt-8" id="upload-status">A processar…</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeUploadModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: nexus-accounting
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn app:app -c gunicorn.conf.py
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+    disk:
+      name: nexus-data
+      mountPath: /data
+      sizeGB: 1
