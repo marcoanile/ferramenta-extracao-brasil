@@ -1,0 +1,50 @@
+NEXUS — Setup Guide
+===================
+
+1. REQUIREMENTS
+   - Python 3.11+  →  https://python.org (add to PATH during install)
+   - Windows (install.bat) or any OS (manual steps below)
+
+2. INSTALL
+   Run:  install.bat
+   Or manually:
+     python -m venv venv
+     venv\Scripts\activate
+     pip install -r backend\requirements.txt
+     copy .env.example .env
+
+3. CONFIGURE (.env)
+   Open .env and fill in:
+     TOCONLINE_CLIENT_ID=<from TOConline API settings>
+     TOCONLINE_CLIENT_SECRET=<from TOConline API settings>
+     TOCONLINE_OAUTH_URL=<custom URL from your TOConline account>
+
+   Optional:
+     PORT=5000
+     DEBUG=false
+     DATA_DIR=../data
+
+4. RUN
+   Run:  run.bat
+   Or manually:
+     venv\Scripts\activate
+     cd backend
+     python app.py
+   Open:  http://localhost:5000
+
+5. FIRST USE
+   - Go to Settings in the UI and authenticate with TOConline
+   - Or set credentials in .env (restart required after .env changes)
+   - Upload a bank statement (PDF/Excel/CSV) to test parsing
+
+6. LOGS & DATA
+   - Logs:     data\logs\nexus.log
+   - Database: data\nexus.db  (SQLite)
+   - Uploads:  data\clients\<id>\statements\
+   - Exports:  data\clients\<id>\converted\
+
+7. TROUBLESHOOTING
+   - "Python not found"          → reinstall Python, check "Add to PATH"
+   - Movements not showing       → check nexus.log for parse errors
+   - TOConline auth fails        → verify TOCONLINE_OAUTH_URL in .env
+   - Frontend blank              → open browser console (F12) for JS errors

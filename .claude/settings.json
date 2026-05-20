@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue)",
+      "PowerShell(curl.exe -s http://127.0.0.1:5000/api/clients)",
+      "Bash(ls \"C:/Users/Utilizador/Desktop/Claude Code/\" 2>/dev/null || echo \"Directory is empty or doesn't exist\")",
+      "Read(//c/Users/Utilizador/Desktop/Claude Code/**)",
+      "Bash(python -c ' *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Utilizador\\Desktop\\Claude Code"
+    ]
+  }
+}

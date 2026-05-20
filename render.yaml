@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: nexus
+    runtime: python
+    plan: starter
+    region: frankfurt
+    branch: main
+    rootDir: .
+    buildCommand: pip install -r backend/requirements.txt
+    # Single worker: SQLite serialises writes; multi-worker risks "database is locked".
+    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 --access-logfile -
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: nexus-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATA_DIR
+        value: /var/data
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: TOCONLINE_CLIENT_ID
+        sync: false
+      - key: TOCONLINE_CLIENT_SECRET
+        sync: false
+      - key: TOCONLINE_OAUTH_URL
+        value: https://identity.toconline.pt
+      - key: TOCONLINE_API_URL
+        value: https://apiv1.toconline.com
