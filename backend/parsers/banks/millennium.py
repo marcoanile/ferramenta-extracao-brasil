@@ -55,8 +55,16 @@ class MillenniumParser(BankParser):
     # ── Header ────────────────────────────────────────────────────────────────
 
     def _extract_year(self, text: str) -> int | None:
-        m = re.search(r"EXTRATO\s+DE\s+(\d{4})/", text, re.IGNORECASE)
-        return int(m.group(1)) if m else None
+        # "EXTRATO DE 2025/01/01 A ..." or "N. 2026/001" or top-of-page date "26/01/30"
+        for pattern in [
+            r"EXTRATO\s+DE\s+(\d{4})/",
+            r"N\.\s+(\d{4})/",
+            r"\b(20\d{2})/\d{2}/\d{2}\b",
+        ]:
+            m = re.search(pattern, text, re.IGNORECASE)
+            if m:
+                return int(m.group(1))
+        return None
 
     def _extract_header(self, text: str, stmt: ParsedStatement):
         iban_m = re.search(r"IBAN[:\s]+([A-Z]{2}\d{2}[\w\s]{10,30})", text, re.IGNORECASE)

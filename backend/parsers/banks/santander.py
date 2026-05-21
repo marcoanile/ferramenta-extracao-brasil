@@ -6,7 +6,7 @@ from .base import BankParser, ParsedStatement, Movement
 class SantanderParser(BankParser):
     bank_name = "Santander"
 
-    SIGNATURES = ["santander", "banco santander totta", "totta", "totaptpl"]
+    SIGNATURES = ["banco santander totta", "banco santander", "totta", "totaptpl"]
 
     def can_parse(self, content: str | bytes, filename: str) -> bool:
         text = content if isinstance(content, str) else content.decode("utf-8", errors="ignore")

@@ -12,7 +12,7 @@ from .base import BankParser, ParsedStatement, Movement
 
 class BPIParser(BankParser):
     bank_name = "BPI"
-    SIGNATURES = ["banco bpi", "bpi", "bbpiptpl", "extracto de conta"]
+    SIGNATURES = ["banco bpi", "bbpiptpl", "extracto de conta", "bpi.pt"]
 
     # Portuguese number: optional minus, 1-3 digits, optional (space + 3 digits) groups, comma + 2 decimal
     _PT_NUM = re.compile(r'-?(?:\d{1,3}(?:[ ]\d{3})*|\d+),\d{2}')
