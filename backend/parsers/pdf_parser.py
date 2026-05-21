@@ -57,7 +57,12 @@ def parse_pdf(file_path: str | Path, bank_hint: str = None) -> ParsedStatement:
 
 
 def _ocr_pdf(path: Path) -> str:
-    """Render each page at 300 DPI via PyMuPDF and OCR with Tesseract (por+eng)."""
+    """Render each page via PyMuPDF and OCR with Tesseract (por+eng).
+
+    200 DPI is sufficient for clean printed bank statements and keeps
+    per-page memory at ~11 MB (vs ~26 MB at 300 DPI), which matters on
+    low-memory cloud instances.
+    """
     try:
         import fitz  # PyMuPDF — bundles its own renderer, no Poppler needed
         import pytesseract
@@ -68,18 +73,18 @@ def _ocr_pdf(path: Path) -> str:
             "Dependências de OCR em falta. Execute: pip install pymupdf pytesseract"
         ) from exc
 
-    text = ""
+    pages_text = []
     doc = fitz.open(str(path))
     for i, page in enumerate(doc):
-        # 300 DPI ≈ zoom factor 300/72
-        mat = fitz.Matrix(300 / 72, 300 / 72)
-        pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB)
+        mat = fitz.Matrix(200 / 72, 200 / 72)  # 200 DPI
+        pix = page.get_pixmap(matrix=mat, colorspace=fitz.csGRAY)  # greyscale halves RAM
         img = Image.open(io.BytesIO(pix.tobytes("png")))
         page_text = pytesseract.image_to_string(img, lang="por+eng")
         log.debug("OCR page %d: %d chars", i + 1, len(page_text))
-        text += page_text + "\n"
+        pages_text.append(page_text)
+        del pix, img  # free pixel data before next page
     doc.close()
-    return text
+    return "\n".join(pages_text)
 
 
 def _try_table_extraction(path: Path, parser, stmt: ParsedStatement) -> ParsedStatement:
