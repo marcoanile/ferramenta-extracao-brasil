@@ -191,6 +191,10 @@ let groupExtracts = [];
 async function renderConsolidar() {
   await loadGroups();
   document.getElementById('content').innerHTML = `
+    <div class="consolidar-hero">
+      <h2>Consolidar extratos bancários</h2>
+      <p>Agrupe extratos mensais e gere um Excel unificado pronto a importar.</p>
+    </div>
     <div class="consolidar-wrap">
       <div class="groups-panel">
         <div class="groups-panel-header">

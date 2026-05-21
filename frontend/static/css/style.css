@@ -40,7 +40,7 @@ html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; font-
   background: var(--surface); border-bottom: 1px solid var(--border);
 }
 .brand { display: flex; align-items: center; gap: 10px; }
-.logo { height: 30px; width: auto; }
+.logo { height: 70px; width: auto; }
 .brand-name { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
 .brand-accent { color: var(--primary); }
 
@@ -132,9 +132,13 @@ html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; font-
 .result-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* ── Consolidar layout ──────────────────────────────────────── */
+.consolidar-hero { margin-bottom: 20px; }
+.consolidar-hero h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.consolidar-hero p { color: var(--text-muted); line-height: 1.65; font-size: 14px; }
+
 .consolidar-wrap {
   display: flex; gap: 20px;
-  height: calc(100vh - 141px);
+  height: min(calc(100vh - 230px), 580px);
 }
 
 .groups-panel {
