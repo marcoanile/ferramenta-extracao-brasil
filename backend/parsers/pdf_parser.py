@@ -57,29 +57,28 @@ def parse_pdf(file_path: str | Path, bank_hint: str = None) -> ParsedStatement:
 
 
 def _ocr_pdf(path: Path) -> str:
-    """Render each page at 300 DPI and OCR with Tesseract (por+eng)."""
+    """Render each page at 300 DPI via PyMuPDF and OCR with Tesseract (por+eng)."""
     try:
-        from pdf2image import convert_from_path
+        import fitz  # PyMuPDF — bundles its own renderer, no Poppler needed
         import pytesseract
+        from PIL import Image
+        import io
     except ImportError as exc:
         raise RuntimeError(
-            "Dependências de OCR em falta. Execute: pip install pdf2image pytesseract"
-        ) from exc
-
-    try:
-        pages = convert_from_path(str(path), dpi=300)
-    except Exception as exc:
-        # Poppler not installed — give an actionable message
-        raise RuntimeError(
-            f"pdf2image não conseguiu converter o PDF ({exc}). "
-            "Instale o Poppler: winget install oscarblancarteMartinez.poppler"
+            "Dependências de OCR em falta. Execute: pip install pymupdf pytesseract"
         ) from exc
 
     text = ""
-    for i, img in enumerate(pages):
+    doc = fitz.open(str(path))
+    for i, page in enumerate(doc):
+        # 300 DPI ≈ zoom factor 300/72
+        mat = fitz.Matrix(300 / 72, 300 / 72)
+        pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB)
+        img = Image.open(io.BytesIO(pix.tobytes("png")))
         page_text = pytesseract.image_to_string(img, lang="por+eng")
         log.debug("OCR page %d: %d chars", i + 1, len(page_text))
         text += page_text + "\n"
+    doc.close()
     return text
 
 
