@@ -6,7 +6,7 @@ services:
     region: frankfurt
     branch: main
     rootDir: .
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: bash build.sh
     # Single worker: SQLite serialises writes; multi-worker risks "database is locked".
     startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 --access-logfile -
     healthCheckPath: /api/health
