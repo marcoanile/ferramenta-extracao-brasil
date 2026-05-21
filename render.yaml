@@ -1,14 +1,11 @@
 services:
   - type: web
     name: nexus
-    runtime: python
+    runtime: docker
     plan: starter
     region: frankfurt
     branch: main
     rootDir: .
-    buildCommand: bash build.sh
-    # Single worker: SQLite serialises writes; multi-worker risks "database is locked".
-    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 --access-logfile -
     healthCheckPath: /api/health
     autoDeploy: true
     disk:
@@ -16,8 +13,6 @@ services:
       mountPath: /var/data
       sizeGB: 1
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
       - key: DATA_DIR
         value: /var/data
       - key: DEBUG
