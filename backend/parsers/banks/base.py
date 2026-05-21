@@ -79,7 +79,12 @@ class BankParser:
         if not value:
             return None
         value = str(value).strip()
-        # DD-MM-YYYY or DD/MM/YYYY
+        # ISO YYYY-MM-DD — must be checked first; dateutil with dayfirst=True
+        # misinterprets "2026-04-06" as June 4 (reads 04 as day, 06 as month).
+        m = re.match(r'^(\d{4})-(\d{2})-(\d{2})$', value)
+        if m:
+            return value  # already in the correct format
+        # DD-MM-YYYY or DD/MM/YYYY or DD.MM.YYYY
         m = re.match(r"(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})", value)
         if m:
             d, mo, y = m.groups()
