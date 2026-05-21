@@ -1,11 +1,12 @@
 """Nexus Extrator — Flask backend."""
+import io
 import logging
 import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, after_this_request, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 
 import config
@@ -77,13 +78,13 @@ def convert():
         bank_slug = (parsed.bank_name or "extrato").lower().replace(" ", "_").replace("/", "-")
         download_name = f"extrato_{bank_slug}_{year}.xlsx"
 
-        @after_this_request
-        def _cleanup(response):
-            tmp.unlink(missing_ok=True)
-            out.unlink(missing_ok=True)
-            return response
+        buf = io.BytesIO(out.read_bytes())
+        buf.seek(0)
+        tmp.unlink(missing_ok=True)
+        out.unlink(missing_ok=True)
 
-        response = send_file(str(out), as_attachment=True, download_name=download_name)
+        response = send_file(buf, as_attachment=True, download_name=download_name,
+                             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         response.headers["X-Bank-Name"] = parsed.bank_name or ""
         response.headers["X-Movement-Count"] = str(len(movements))
         response.headers["X-Period-Start"] = parsed.period_start or ""
@@ -93,8 +94,7 @@ def convert():
     except Exception as e:
         log.exception("Conversion error")
         tmp.unlink(missing_ok=True)
-        if out.exists():
-            out.unlink()
+        out.unlink(missing_ok=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -195,17 +195,16 @@ def generate_group(group_id: int):
         _build_consolidated_excel(movements, out)
         safe_name = group["name"].replace(" ", "_").replace("/", "-")
 
-        @after_this_request
-        def _cleanup(response):
-            out.unlink(missing_ok=True)
-            return response
+        buf = io.BytesIO(out.read_bytes())
+        buf.seek(0)
+        out.unlink(missing_ok=True)
 
-        return send_file(str(out), as_attachment=True, download_name=f"{safe_name}.xlsx")
+        return send_file(buf, as_attachment=True, download_name=f"{safe_name}.xlsx",
+                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     except Exception as e:
         log.exception("Generate error")
-        if out.exists():
-            out.unlink()
+        out.unlink(missing_ok=True)
         return jsonify({"error": str(e)}), 500
 
 
