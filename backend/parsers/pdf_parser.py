@@ -33,7 +33,7 @@ def parse_pdf(file_path: str | Path, bank_hint: str = None) -> ParsedStatement:
         parser = detect_parser(full_text, filename)
         log.info("PDF %s -> parser: %s (text)", path.name, parser.bank_name)
         if hasattr(parser, "parse_pdf"):
-            stmt = parser.parse_pdf(path, filename)
+            stmt = parser.parse_pdf(path, filename, full_text=full_text)
         else:
             stmt = parser.parse(full_text, filename)
         if stmt.movements:

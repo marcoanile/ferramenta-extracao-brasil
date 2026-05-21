@@ -17,14 +17,15 @@ class NovoBancoParser(BankParser):
         text_lower = text.lower() + filename.lower()
         return any(s in text_lower for s in self.SIGNATURES)
 
-    def parse_pdf(self, path, filename: str) -> ParsedStatement:
+    def parse_pdf(self, path, filename: str, full_text: str = None) -> ParsedStatement:
         import pdfplumber
         stmt = ParsedStatement(bank_name=self.bank_name)
         self._stop_parsing = False
         with pdfplumber.open(Path(path)) as pdf:
-            full_text = ""
-            for page in pdf.pages:
-                full_text += (page.extract_text(x_tolerance=2, y_tolerance=2) or "") + "\n"
+            if full_text is None:
+                full_text = ""
+                for page in pdf.pages:
+                    full_text += (page.extract_text(x_tolerance=2, y_tolerance=2) or "") + "\n"
             self._extract_header(full_text, stmt)
             for page in pdf.pages:
                 if self._stop_parsing:
