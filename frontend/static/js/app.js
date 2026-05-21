@@ -116,7 +116,12 @@ function showConverterProcessing(filename) {
 
 function showConverterDone(bankName, movCount, periodStart, periodEnd) {
   const period = fmtPeriod(periodStart, periodEnd);
-  document.getElementById('converter-body').innerHTML = `
+  const el = document.getElementById('converter-body');
+  if (!el) {
+    toast(`${esc(bankName || 'Extrato')} convertido — ficheiro descarregado`, 'success');
+    return;
+  }
+  el.innerHTML = `
     <div class="result-card">
       <div class="result-icon">✅</div>
       <div class="result-title">Extrato convertido com sucesso</div>
@@ -133,7 +138,9 @@ function showConverterDone(bankName, movCount, periodStart, periodEnd) {
 }
 
 function showConverterError(msg) {
-  document.getElementById('converter-body').innerHTML = `
+  const el = document.getElementById('converter-body');
+  if (!el) { toast(`Erro ao converter: ${msg}`, 'error'); return; }
+  el.innerHTML = `
     <div class="result-card error">
       <div class="result-icon">❌</div>
       <div class="result-title">Erro ao converter</div>
