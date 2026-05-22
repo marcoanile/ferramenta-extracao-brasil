@@ -236,9 +236,10 @@ def _build_consolidated_excel(movements: list[dict], out: Path):
         ini_row, fin_row = _find_balance_rows(ws)
         data_start = header_row + 1
 
-        opening = next((m["balance"] for m in movements if m["balance"] is not None), 0) or 0
-        movement_sum = round(sum(m["amount"] or 0 for m in movements), 2)
-        effective_closing = round(opening + movement_sum, 2)
+        first_m = next((m for m in movements if m["balance"] is not None), None)
+        last_m = next((m for m in reversed(movements) if m["balance"] is not None), None)
+        opening = round((first_m["balance"] or 0) - (first_m["amount"] or 0), 2) if first_m else 0
+        effective_closing = (last_m["balance"] or 0) if last_m else 0
 
         if ini_row:
             ws.cell(row=ini_row, column=4).value = opening
