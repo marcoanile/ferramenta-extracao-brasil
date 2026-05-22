@@ -42,11 +42,13 @@ def _extract_text_pymupdf(path: Path) -> str:
 
 def parse_pdf(file_path: str | Path, bank_hint: str = None) -> ParsedStatement:
     path = Path(file_path)
+    pdfplumber_ok = True
     try:
         full_text = _extract_text_pdfplumber(path)
     except Exception as e:
         log.warning("pdfplumber failed (%s), retrying with PyMuPDF", e)
         full_text = _extract_text_pymupdf(path)
+        pdfplumber_ok = False
 
     filename = path.name.lower()
     if bank_hint:
@@ -55,15 +57,17 @@ def parse_pdf(file_path: str | Path, bank_hint: str = None) -> ParsedStatement:
     if _is_meaningful(full_text):
         parser = detect_parser(full_text, filename)
         log.info("PDF %s -> parser: %s (text)", path.name, parser.bank_name)
-        if hasattr(parser, "parse_pdf"):
+        # Only use pdfplumber-based parse_pdf methods if pdfplumber can open this file
+        if pdfplumber_ok and hasattr(parser, "parse_pdf"):
             stmt = parser.parse_pdf(path, filename, full_text=full_text)
         else:
             stmt = parser.parse(full_text, filename)
         if stmt.movements:
             return stmt
-        stmt = _try_table_extraction(path, parser, stmt)
-        if stmt.movements:
-            return stmt
+        if pdfplumber_ok:
+            stmt = _try_table_extraction(path, parser, stmt)
+            if stmt.movements:
+                return stmt
 
     # Text layer insufficient — attempt OCR
     log.info("PDF %s has no usable text layer; attempting OCR", path.name)
