@@ -38,10 +38,33 @@ def init_db():
                 balance      REAL
             );
         """)
-        # Migrate: add group_id column to movements if an older schema is in use
-        existing = {row[1] for row in con.execute("PRAGMA table_info(movements)")}
-        if "group_id" not in existing:
-            con.execute("ALTER TABLE movements ADD COLUMN group_id INTEGER NOT NULL DEFAULT 0")
+        # Migrate: if movements table is missing extract_id or group_id, it's too old to patch —
+        # drop and recreate both movements and extracts (uploads were already failing, no data loss).
+        mov_cols = {row[1] for row in con.execute("PRAGMA table_info(movements)")}
+        if "extract_id" not in mov_cols or "group_id" not in mov_cols:
+            con.executescript("""
+                DROP TABLE IF EXISTS movements;
+                DROP TABLE IF EXISTS extracts;
+                CREATE TABLE IF NOT EXISTS extracts (
+                    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                    group_id       INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+                    filename       TEXT,
+                    bank_name      TEXT,
+                    period_start   TEXT,
+                    period_end     TEXT,
+                    movement_count INTEGER,
+                    added_at       TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS movements (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    extract_id   INTEGER NOT NULL REFERENCES extracts(id) ON DELETE CASCADE,
+                    group_id     INTEGER NOT NULL,
+                    date         TEXT,
+                    description  TEXT,
+                    amount       REAL,
+                    balance      REAL
+                );
+            """)
 
 
 def get_groups() -> list[dict]:
