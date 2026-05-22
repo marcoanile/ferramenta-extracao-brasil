@@ -38,6 +38,10 @@ def init_db():
                 balance      REAL
             );
         """)
+        # Migrate: add group_id column to movements if an older schema is in use
+        existing = {row[1] for row in con.execute("PRAGMA table_info(movements)")}
+        if "group_id" not in existing:
+            con.execute("ALTER TABLE movements ADD COLUMN group_id INTEGER NOT NULL DEFAULT 0")
 
 
 def get_groups() -> list[dict]:

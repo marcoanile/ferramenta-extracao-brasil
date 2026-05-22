@@ -132,7 +132,12 @@ def list_extracts(group_id: int):
 
 @app.route("/api/groups/<int:group_id>/upload", methods=["POST"])
 def upload_to_group(group_id: int):
-    if not get_group(group_id):
+    try:
+        group = get_group(group_id)
+    except Exception as e:
+        log.exception("upload_to_group DB error")
+        return jsonify({"error": str(e)}), 500
+    if not group:
         return jsonify({"error": "Grupo não encontrado"}), 404
     if "file" not in request.files:
         return jsonify({"error": "Ficheiro em falta"}), 400
@@ -183,10 +188,14 @@ def delete_extract_route(group_id: int, extract_id: int):
 
 @app.route("/api/groups/<int:group_id>/generate")
 def generate_group(group_id: int):
-    group = get_group(group_id)
+    try:
+        group = get_group(group_id)
+        movements = get_movements_for_group(group_id)
+    except Exception as e:
+        log.exception("generate_group DB error")
+        return jsonify({"error": str(e)}), 500
     if not group:
         return jsonify({"error": "Grupo não encontrado"}), 404
-    movements = get_movements_for_group(group_id)
     if not movements:
         return jsonify({"error": "Sem movimentos para consolidar"}), 400
 
@@ -228,7 +237,7 @@ def _build_consolidated_excel(movements: list[dict], out: Path):
         data_start = header_row + 1
 
         opening = next((m["balance"] for m in movements if m["balance"] is not None), 0) or 0
-        movement_sum = round(sum(m["amount"] for m in movements), 2)
+        movement_sum = round(sum(m["amount"] or 0 for m in movements), 2)
         effective_closing = round(opening + movement_sum, 2)
 
         if ini_row:
