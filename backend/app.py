@@ -238,7 +238,11 @@ def _build_consolidated_excel(movements: list[dict], out: Path):
 
         first_m = next((m for m in movements if m["balance"] is not None), None)
         opening = round((first_m["balance"] or 0) - (first_m["amount"] or 0), 2) if first_m else 0
-        movement_sum = round(sum(m["amount"] or 0 for m in movements), 2)
+
+        # Round each amount to exactly 2 d.p. so Excel's SUM of the cells
+        # matches our Python sum (SQLite REAL can carry hidden float noise).
+        amounts = [round(m["amount"] or 0, 2) for m in movements]
+        movement_sum = round(sum(amounts), 2)
         effective_closing = round(opening + movement_sum, 2)
 
         if ini_row:
@@ -250,7 +254,7 @@ def _build_consolidated_excel(movements: list[dict], out: Path):
             for col in range(1, ws.max_column + 1):
                 ws.cell(row=row_idx, column=col).value = None
 
-        for i, mov in enumerate(movements):
+        for i, (mov, amount) in enumerate(zip(movements, amounts)):
             row = data_start + i
             d = _to_date(mov["date"])
             ws.cell(row=row, column=1, value=d).number_format = "DD/MM/YYYY"
@@ -258,7 +262,7 @@ def _build_consolidated_excel(movements: list[dict], out: Path):
             ws.cell(row=row, column=2, value=d).number_format = "DD/MM/YYYY"
             ws.cell(row=row, column=2).border = thin
             ws.cell(row=row, column=3, value=mov.get("description") or "").border = thin
-            cell = ws.cell(row=row, column=4, value=mov["amount"])
+            cell = ws.cell(row=row, column=4, value=amount)
             cell.number_format = "#,##0.00"
             cell.border = thin
         wb.save(str(out))
