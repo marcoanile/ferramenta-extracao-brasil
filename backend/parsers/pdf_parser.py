@@ -18,12 +18,35 @@ def _is_meaningful(text: str) -> bool:
     return sum(c.isalnum() for c in text) >= _MIN_TEXT_CHARS
 
 
-def parse_pdf(file_path: str | Path, bank_hint: str = None) -> ParsedStatement:
-    path = Path(file_path)
+def _extract_text_pdfplumber(path: Path) -> str:
     full_text = ""
     with pdfplumber.open(path) as pdf:
         for page in pdf.pages:
             full_text += (page.extract_text(x_tolerance=2, y_tolerance=2) or "") + "\n"
+    return full_text
+
+
+def _extract_text_pymupdf(path: Path) -> str:
+    """Fallback text extractor using PyMuPDF — handles PDFs that trip pdfminer's EOF parser."""
+    try:
+        import fitz
+    except ImportError:
+        return ""
+    full_text = ""
+    doc = fitz.open(str(path))
+    for page in doc:
+        full_text += page.get_text() + "\n"
+    doc.close()
+    return full_text
+
+
+def parse_pdf(file_path: str | Path, bank_hint: str = None) -> ParsedStatement:
+    path = Path(file_path)
+    try:
+        full_text = _extract_text_pdfplumber(path)
+    except Exception as e:
+        log.warning("pdfplumber failed (%s), retrying with PyMuPDF", e)
+        full_text = _extract_text_pymupdf(path)
 
     filename = path.name.lower()
     if bank_hint:
