@@ -6,12 +6,23 @@ from .base import BankParser, ParsedStatement, Movement
 class SantanderParser(BankParser):
     bank_name = "Santander"
 
-    SIGNATURES = ["banco santander totta", "banco santander", "totta", "totaptpl"]
+    # "totaptpl" is the unique Santander Totta SWIFT BIC — reliable anywhere in the text.
+    # "banco santander totta" is only checked in the first 1000 chars (header area) to
+    # avoid false-positive matches when it appears as a payee/payer in another bank's
+    # statement (e.g. "TRF DE BANCO SANTANDER TOTTA S.A." in a BPI movement line).
+    SIGNATURES = ["totaptpl"]
+    HEADER_SIGNATURES = ["banco santander totta"]
 
     def can_parse(self, content: str | bytes, filename: str) -> bool:
         text = content if isinstance(content, str) else content.decode("utf-8", errors="ignore")
-        text_lower = text.lower() + filename.lower()
-        return any(s in text_lower for s in self.SIGNATURES)
+        text_lower = text.lower()
+        filename_lower = filename.lower()
+        # SWIFT code — unique enough to check everywhere
+        if any(s in text_lower + filename_lower for s in self.SIGNATURES):
+            return True
+        # Bank name — only in the header to avoid matching payee descriptions
+        header = text_lower[:1000] + filename_lower
+        return any(s in header for s in self.HEADER_SIGNATURES)
 
     def parse(self, content: str | bytes, filename: str) -> ParsedStatement:
         text = content if isinstance(content, str) else content.decode("utf-8", errors="ignore")
